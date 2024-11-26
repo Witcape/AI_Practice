@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Animal Story Generator</title>
+    <style>
+        /* New, child-friendly styles */
+        body {
+            font-family: 'Comic Sans MS', sans-serif;
+            background-color: #ffebcd; /* Light background color */
+            color: #333;
+            text-align: center;
+            padding: 20px;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background-image: url('https://example.com/soft-clouds-background.jpg'); /* Soft, playful background */
+            background-size: cover;
+            background-repeat: no-repeat;
+        }
+
+        h1 {
+            font-size: 3em;
+            margin-bottom: 20px;
+            color: #ff69b4; /* Pinkish color */
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+        }
+
+        p {
+            font-size: 1.5em;
+            color: #ff6347; /* Tomato color */
+            margin-bottom: 20px;
+        }
+
+        .animal-button-container, .mood-button-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 30px;
+            justify-content: center;
+            margin-bottom: 30px;
+        }
+
+        button {
+            padding: 20px 40px;
+            font-size: 22px;
+            color: white;
+            background-color: #32cd32; /* Lime green */
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+            transition: transform 0.2s ease;
+        }
+
+        button:hover {
+            background-color: #ff6347; /* Change color on hover */
+            transform: scale(1.1);
+            box-shadow: 0 6px 15px rgba(0, 0, 0, 0.3);
+        }
+
+        .story {
+            display: none;
+            font-size: 1.5em;
+            margin-top: 20px;
+            padding: 20px;
+            max-width: 600px;
+            max-height: 80vh;
+            overflow-y: auto;
+            background-color: #fff;
+            border-radius: 15px;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+            border: 5px solid #ff69b4; /* Border with soft pink */
+            line-height: 1.8;
+            white-space: pre-wrap;
+            font-family: 'Comic Sans MS', sans-serif;
+        }
+
+        .story.show {
+            display: block;
+        }
+
+        .generating-message {
+            font-size: 1.5em;
+            margin-top: 20px;
+            font-weight: bold;
+        }
+
+        .error-message {
+            color: red;
+            font-size: 1.2em;
+            margin-top: 20px;
+        }
+
+        .saved-stories {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            text-align: left;
+        }
+
+        .saved-stories button {
+            margin-bottom: 10px;
+            background-color: #ff1493;
+            color: white;
+            font-size: 18px;
+            border-radius: 10px;
+            padding: 15px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+            cursor: pointer;
+            transition: transform 0.2s ease;
+        }
+
+        .saved-stories button:hover {
+            background-color: #ff6347;
+            transform: scale(1.1);
+        }
+
+        .saved-story-item {
+            background-color: #ffdab9; /* Light peach */
+            color: #333;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            cursor: pointer;
+            font-size: 18px;
+            transition: transform 0.2s ease;
+        }
+
+        .saved-story-item:hover {
+            background-color: #ff6347;
+            color: white;
+            transform: scale(1.05);
+        }
+
+        .signin-button {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            padding: 15px 25px;
+            font-size: 18px;
+            background-color: #ff1493;
+            color: white;
+            border-radius: 10px;
+            cursor: pointer;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+        }
+
+        .new-story-button {
+            margin-top: 20px;
+            display: none;
+            background-color: #32cd32;
+            color: white;
+            padding: 15px 30px;
+            font-size: 22px;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+            transition: transform 0.2s ease;
+        }
+
+        .new-story-button:hover {
+            background-color: #ff6347;
+            transform: scale(1.1);
+        }
+    </style>
+</head>
+<body>
+    <h1>Animal Story Generator</h1>
+    <p>Select an animal to get started!</p>
+
+    <div class="animal-button-container">
+        <button onclick="selectAnimal('tiger')">🐯 Tiger</button>
+        <button onclick="selectAnimal('whale')">🐋 Whale</button>
+        <button onclick="selectAnimal('elephant')">🐘 Elephant</button>
+        <button onclick="selectAnimal('lion')">🦁 Lion</button>
+        <button onclick="selectAnimal('monkey')">🐒 Monkey</button>
+    </div>
+
+    <div class="mood-button-container" id="mood-buttons" style="display: none;">
+        <button onclick="selectMood('happy')">😊 Happy</button>
+        <button onclick="selectMood('sad')">😢 Sad</button>
+        <button onclick="selectMood('angry')">😡 Angry</button>
+        <button onclick="selectMood('excited')">🤩 Excited</button>
+    </div>
+
+    <div class="action-buttons" id="action-buttons" style="display: none;">
+        <button onclick="goBack()">Back</button>
+        <button onclick="generateStory()">Generate Story</button>
+    </div>
+
+    <div id="generating-message" class="generating-message">Generating your story...</div>
+    <div id="story-output" class="story"></div>
+    <div id="error-message" class="error-message"></div>
+
+    <button class="new-story-button" id="new-story-button" onclick="resetForNewStory()">Generate Another Story</button>
+
+    <div class="saved-stories">
+        <button onclick="toggleSavedStories()">Saved Stories</button>
+        <div id="saved-stories-list" style="display: none;"></div>
+    </div>
+
+    <button class="signin-button" onclick="signIn()">Sign In</button>
+
+    <script>
+        let selectedAnimal = '';
+        let selectedMood = '';
+        let savedStories = []; // To hold saved stories
+
+        function selectAnimal(animal) {
+            selectedAnimal = animal;
+            document.querySelector('.animal-button-container').style.display = 'none';
+            document.getElementById('mood-buttons').style.display = 'flex';
+            document.getElementById('action-buttons').style.display = 'block';
+        }
+
+        function selectMood(mood) {
+            selectedMood = mood;
+        }
+
+        async function generateStory() {
+            if (!selectedAnimal || !selectedMood) {
+                document.getElementById('error-message').textContent = "Please select both an animal and a mood!";
+                return;
+            }
+
+            document.getElementById('mood-buttons').style.display = 'none';
+            document.getElementById('action-buttons').style.display = 'none';
+            document.getElementById('generating-message').style.display = 'block';
+            document.getElementById('error-message').textContent = ''; // Clear error message
+
+            try {
+                const response = await fetch('http://127.0.0.1:5000/generate_story', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ animal: selectedAnimal, mood: selectedMood })
+                });
+
+                if (!response.ok) {
+                    throw new Error("Failed to generate story");
+                }
+
+                const data = await response.json();
+                const story = data.story || 'Something went wrong. Please try again!';
+                document.getElementById('generating-message').style.display = 'none';
+                document.getElementById('story-output').textContent = story;
+                document.getElementById('story-output').classList.add('show');
+                document.getElementById('new-story-button').style.display = 'block';
+
+                // Save the story
+                savedStories.push(story);
+                saveStoryInLocalStorage();
+
+            } catch (error) {
+                document.getElementById('generating-message').style.display = 'none';
+                document.getElementById('error-message').textContent = error.message;
+            }
+        }
+
+        function goBack() {
+            document.getElementById('mood-buttons').style.display = 'none';
+            document.getElementById('animal-button-container').style.display = 'flex';
+            document.getElementById('action-buttons').style.display = 'none';
+        }
+
+        function resetForNewStory() {
+            selectedAnimal = '';
+            selectedMood = '';
+            document.getElementById('story-output').textContent = '';
+            document.getElementById('story-output').classList.remove('show');
+            document.getElementById('new-story-button').style.display = 'none';
+            document.querySelector('.animal-button-container').style.display = 'flex';
+        }
+
+        function toggleSavedStories() {
+            const savedStoriesList = document.getElementById('saved-stories-list');
+            savedStoriesList.style.display = savedStoriesList.style.display === 'none' ? 'block' : 'none';
+            savedStoriesList.innerHTML = savedStories.map((story, index) => {
+                return `<div class="saved-story-item" onclick="loadSavedStory(${index})">${story.substring(0, 50)}...</div>`;
+            }).join('');
+        }
+
+        function loadSavedStory(index) {
+            document.getElementById('story-output').textContent = savedStories[index];
+            document.getElementById('story-output').classList.add('show');
+            document.getElementById('new-story-button').style.display = 'block';
+        }
+
+        function saveStoryInLocalStorage() {
+            localStorage.setItem('savedStories', JSON.stringify(savedStories));
+        }
+
+        function signIn() {
+            alert("Sign In functionality will be implemented!");
+        }
+    </script>
+</body>
+</html>

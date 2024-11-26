@@ -1,0 +1,289 @@
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>College Chatbot</title>
+    <style>
+        /* CSS styles */
+        body {
+            font-family: Arial, sans-serif;
+            background-color: black;
+            color: white;
+            text-align: center;
+            padding: 20px;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            position: relative;
+        }
+        h1 {
+            font-size: 2.5em;
+            margin-bottom: 20px;
+        }
+        .topic-button-container {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            margin-bottom: 30px;
+        }
+        button {
+            padding: 15px 25px;
+            font-size: 18px;
+            color: #fff;
+            background-color: #333;
+            border: 2px solid #fff;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        button:hover {
+            background-color: #fff;
+            color: #333;
+            transform: scale(1.1);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+        }
+        .question-container {
+            display: none;
+            margin-top: 20px;
+            text-align: center;
+        }
+        .question-input {
+            padding: 10px;
+            font-size: 16px;
+            margin-bottom: 20px;
+            width: 70%;
+            max-width: 600px;
+            border: 2px solid #fff;
+            border-radius: 5px;
+            color: #333;
+            background-color: #fff;
+        }
+        .action-buttons {
+            display: none;
+        }
+        .prompt {
+            display: none;
+            font-size: 1.4em;
+            margin-top: 20px;
+            padding: 20px;
+            max-width: 600px;
+            max-height: 80vh;
+            overflow-y: auto;
+            border-radius: 10px;
+            background: #333;
+            border: 2px solid #fff;
+            line-height: 1.6;
+            white-space: pre-wrap;
+            box-shadow: 0 4px 15px rgba(255, 255, 255, 0.2);
+        }
+        .prompt.show {
+            display: block;
+        }
+        .generating-message {
+            display: none;
+            font-size: 1.4em;
+            margin-top: 20px;
+        }
+        .error-message {
+            color: red;
+            font-size: 1.2em;
+            margin-top: 20px;
+        }
+        .saved-prompts {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            text-align: left;
+        }
+        .saved-prompts button {
+            margin-bottom: 10px;
+            background-color: #555;
+        }
+        .saved-prompt-item {
+            background-color: #222;
+            color: #fff;
+            padding: 10px;
+            border-radius: 5px;
+            margin-bottom: 5px;
+            border: 1px solid #fff;
+            cursor: pointer;
+        }
+        .signin-button {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            padding: 10px 20px;
+        }
+        .new-prompt-button {
+            margin-top: 20px;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <h1>College Chatbot</h1>
+    <p>Select a topic and enter your question below!</p>
+
+    <div class="topic-button-container">
+        <button onclick="selectTopic('Computer Science')">Computer Science</button>
+        <button onclick="selectTopic('Physics')">Physics</button>
+        <button onclick="selectTopic('Mathematics')">Mathematics</button>
+        <button onclick="selectTopic('Biology')">Biology</button>
+        <button onclick="selectTopic('Chemistry')">Chemistry</button>
+    </div>
+
+    <div class="question-container" id="question-container">
+        <label for="question-input">Enter your question:</label>
+        <input type="text" id="question-input" class="question-input" placeholder="Type your question here">
+    </div>
+
+    <div class="action-buttons" id="action-buttons">
+        <button onclick="goBack()">Back</button>
+        <button onclick="generatePrompt()">Generate Prompt</button>
+    </div>
+
+    <div id="generating-message" class="generating-message">Generating your prompt...</div>
+    <div id="prompt-output" class="prompt"></div>
+    <div id="error-message" class="error-message"></div>
+
+    <button class="new-prompt-button" id="new-prompt-button" onclick="resetForNewPrompt()">Generate Another Prompt</button>
+
+    <div class="saved-prompts">
+        <button onclick="toggleSavedPrompts()">Saved Prompts</button>
+        <div id="saved-prompts-list" style="display: none;"></div>
+    </div>
+
+    <button class="signin-button" onclick="signIn()">Sign In</button>
+
+    <script>
+        let selectedTopic = '';
+        let userQuestion = '';
+        let savedPrompts = []; // To hold saved prompts
+
+        // Function to display the question input after selecting a topic
+        function selectTopic(topic) {
+            selectedTopic = topic;
+            document.querySelector('.topic-button-container').style.display = 'none';
+            document.getElementById('question-container').style.display = 'block';
+            document.getElementById('action-buttons').style.display = 'block';
+        }
+
+        // Function to handle prompt generation
+        async function generatePrompt() {
+            userQuestion = document.getElementById('question-input').value;
+
+            if (!selectedTopic || !userQuestion) {
+                document.getElementById('error-message').textContent = "Please select a topic and enter a question!";
+                return;
+            }
+
+            document.getElementById('question-container').style.display = 'none';
+            document.getElementById('action-buttons').style.display = 'none';
+            document.getElementById('generating-message').style.display = 'block';
+            document.getElementById('error-message').textContent = ''; // Clear error message
+
+            try {
+                const response = await fetch('http://127.0.0.1:5000/generate_prompt', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ topic: selectedTopic, question: userQuestion })
+                });
+
+                if (!response.ok) {
+                    throw new Error("Failed to generate prompt.");
+                }
+
+                const data = await response.json();
+
+                if (data.error) {
+                    throw new Error(data.error);
+                }
+
+                document.getElementById('generating-message').style.display = 'none';
+                const promptElement = document.getElementById('prompt-output');
+                promptElement.textContent = ''; // Clear previous prompt
+                promptElement.classList.add('show');
+
+                let i = 0;
+                const promptText = data.prompt;
+
+                // Typewriter effect for displaying the generated prompt
+                function typeWriter() {
+                    if (i < promptText.length) {
+                        promptElement.textContent += promptText.charAt(i);
+                        i++;
+                        setTimeout(typeWriter, 2); // Faster typing speed
+                    } else {
+                        savePrompt(promptText); // Save the prompt after typing finishes
+                        document.getElementById('new-prompt-button').style.display = 'inline-block'; // Show the "Generate Another Prompt" button
+                    }
+                }
+
+                typeWriter();
+            } catch (error) {
+                document.getElementById('generating-message').style.display = 'none';
+                document.getElementById('error-message').textContent = "Error: " + error.message;
+            }
+        }
+
+        // Function to save prompts
+        function savePrompt(prompt) {
+            savedPrompts.push(prompt);
+            updateSavedPromptsList();
+        }
+
+        // Update saved prompts list display
+        function updateSavedPromptsList() {
+            const listElement = document.getElementById('saved-prompts-list');
+            listElement.innerHTML = ''; // Clear existing prompts
+
+            savedPrompts.forEach((prompt, index) => {
+                const promptItem = document.createElement('div');
+                promptItem.className = 'saved-prompt-item';
+                promptItem.textContent = `Prompt ${index + 1}: ${prompt.substring(0, 50)}...`; // Show a preview
+                promptItem.onclick = () => displaySavedPrompt(prompt); // Display prompt in main area on click
+                listElement.appendChild(promptItem);
+            });
+        }
+
+        // Display the full saved prompt
+        function displaySavedPrompt(prompt) {
+            const promptElement = document.getElementById('prompt-output');
+            promptElement.textContent = prompt; // Display the full saved prompt
+            promptElement.classList.add('show');
+        }
+
+        // Toggle saved prompts list visibility
+        function toggleSavedPrompts() {
+            const listElement = document.getElementById('saved-prompts-list');
+            listElement.style.display = listElement.style.display === 'none' ? 'block' : 'none';
+        }
+
+        // Handle back action
+        function goBack() {
+            document.querySelector('.topic-button-container').style.display = 'flex';
+            document.getElementById('question-container').style.display = 'none';
+            document.getElementById('action-buttons').style.display = 'none';
+            document.getElementById('generating-message').style.display = 'none';
+            document.getElementById('prompt-output').classList.remove('show');
+            document.getElementById('new-prompt-button').style.display = 'none';
+        }
+
+        // Reset for a new prompt
+        function resetForNewPrompt() {
+            document.getElementById('question-input').value = '';
+            document.getElementById('prompt-output').classList.remove('show');
+            document.getElementById('new-prompt-button').style.display = 'none';
+            document.querySelector('.topic-button-container').style.display = 'flex';
+        }
+
+        // Simulated Sign-In function
+        function signIn() {
+            alert('Sign-In functionality not implemented yet.');
+        }
+    </script>
+</body>
+</html>

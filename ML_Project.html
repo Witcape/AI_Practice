@@ -1,0 +1,266 @@
+
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Animal Story Generator</title>
+    <style>
+        /* CSS styles */
+        body {
+            font-family: Arial, sans-serif;
+            background-color: black;
+            color: white;
+            text-align: center;
+            padding: 20px;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            position: relative; /* For positioning the saved stories button */
+        }
+        h1 {
+            font-size: 2.5em;
+            margin-bottom: 20px;
+        }
+        .animal-button-container, .mood-button-container {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            margin-bottom: 30px;
+        }
+        button {
+            padding: 15px 25px;
+            font-size: 18px;
+            color: #fff;
+            background-color: #333;
+            border: 2px solid #fff;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        button:hover {
+            background-color: #fff;
+            color: #333;
+            transform: scale(1.1);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+        }
+        .story {
+            display: none;
+            font-size: 1.4em;
+            margin-top: 20px;
+            padding: 20px;
+            max-width: 600px;
+            max-height: 80vh;
+            overflow-y: auto;
+            border-radius: 10px;
+            background: #333;
+            border: 2px solid #fff;
+            line-height: 1.6;
+            white-space: pre-wrap;
+            box-shadow: 0 4px 15px rgba(255, 255, 255, 0.2);
+        }
+        .story.show {
+            display: block;
+        }
+        .generating-message {
+            display: none;
+            font-size: 1.4em;
+            margin-top: 20px;
+        }
+        .error-message {
+            color: red;
+            font-size: 1.2em;
+            margin-top: 20px;
+        }
+        .saved-stories {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            text-align: left;
+        }
+        .saved-stories button {
+            margin-bottom: 10px;
+            background-color: #555;
+        }
+        .saved-story-item {
+            background-color: #222;
+            color: #fff;
+            padding: 10px;
+            border-radius: 5px;
+            margin-bottom: 5px;
+            border: 1px solid #fff;
+            cursor: pointer;
+        }
+        .signin-button {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            padding: 10px 20px;
+        }
+        .new-story-button {
+            margin-top: 20px;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <h1>Animal Story Generator</h1>
+    <p>Select an animal to get started!</p>
+
+    <div class="animal-button-container">
+        <button onclick="selectAnimal('tiger')">Tiger</button>
+        <button onclick="selectAnimal('whale')">Whale</button>
+        <button onclick="selectAnimal('elephant')">Elephant</button>
+        <button onclick="selectAnimal('lion')">Lion</button>
+        <button onclick="selectAnimal('monkey')">Monkey</button>
+    </div>
+
+    <div class="mood-button-container" id="mood-buttons" style="display: none;">
+        <button onclick="selectMood('happy')">Happy</button>
+        <button onclick="selectMood('sad')">Sad</button>
+        <button onclick="selectMood('angry')">Angry</button>
+        <button onclick="selectMood('excited')">Excited</button>
+    </div>
+
+    <div class="action-buttons" id="action-buttons" style="display: none;">
+        <button onclick="goBack()">Back</button>
+        <button onclick="generateStory()">Generate Story</button>
+    </div>
+
+    <div id="generating-message" class="generating-message">Generating your story...</div>
+    <div id="story-output" class="story"></div>
+    <div id="error-message" class="error-message"></div>
+
+    <button class="new-story-button" id="new-story-button" onclick="resetForNewStory()">Generate Another Story</button>
+
+    <div class="saved-stories">
+        <button onclick="toggleSavedStories()">Saved Stories</button>
+        <div id="saved-stories-list" style="display: none;"></div>
+    </div>
+
+    <button class="signin-button" onclick="signIn()">Sign In</button>
+
+    <script>
+        let selectedAnimal = '';
+        let selectedMood = '';
+        let savedStories = []; // To hold saved stories
+
+        function selectAnimal(animal) {
+            selectedAnimal = animal;
+            document.querySelector('.animal-button-container').style.display = 'none';
+            document.getElementById('mood-buttons').style.display = 'flex';
+            document.getElementById('action-buttons').style.display = 'block';
+        }
+
+        function selectMood(mood) {
+            selectedMood = mood;
+        }
+
+        async function generateStory() {
+            if (!selectedAnimal || !selectedMood) {
+                document.getElementById('error-message').textContent = "Please select both an animal and a mood!";
+                return;
+            }
+
+            document.getElementById('mood-buttons').style.display = 'none';
+            document.getElementById('action-buttons').style.display = 'none';
+            document.getElementById('generating-message').style.display = 'block';
+            document.getElementById('error-message').textContent = ''; // Clear error message
+
+            try {
+                const response = await fetch('http://127.0.0.1:5000/generate_story', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ animal: selectedAnimal, mood: selectedMood })
+                });
+
+                if (!response.ok) {
+                    throw new Error("Failed to generate story.");
+                }
+
+                const data = await response.json();
+
+                if (data.error) {
+                    throw new Error(data.error);
+                }
+
+                document.getElementById('generating-message').style.display = 'none';
+                const storyElement = document.getElementById('story-output');
+                storyElement.textContent = ''; // Clear previous story
+                storyElement.classList.add('show');
+
+                let i = 0;
+                const storyText = data.story;
+
+                function typeWriter() {
+                    if (i < storyText.length) {
+                        storyElement.textContent += storyText.charAt(i);
+                        i++;
+                        setTimeout(typeWriter, 2); // Faster typing speed
+                    } else {
+                        saveStory(storyText); // Save the story after typing finishes
+                        document.getElementById('new-story-button').style.display = 'inline-block'; // Show the "Generate Another Story" button
+                    }
+                }
+
+                typeWriter();
+            } catch (error) {
+                document.getElementById('generating-message').style.display = 'none';
+                document.getElementById('error-message').textContent = "Error: " + error.message;
+            }
+        }
+
+        function saveStory(story) {
+            savedStories.push(story);
+            updateSavedStoriesList();
+        }
+
+        function updateSavedStoriesList() {
+            const listElement = document.getElementById('saved-stories-list');
+            listElement.innerHTML = ''; // Clear existing stories
+
+            savedStories.forEach((story, index) => {
+                const storyItem = document.createElement('div');
+                storyItem.className = 'saved-story-item';
+                storyItem.textContent = `Story ${index + 1}: ${story.substring(0, 50)}...`; // Show a preview
+                storyItem.onclick = () => displaySavedStory(story); // Display story in main area on click
+                listElement.appendChild(storyItem);
+            });
+        }
+
+        function displaySavedStory(story) {
+            const storyElement = document.getElementById('story-output');
+            storyElement.textContent = story; // Display the full story
+            storyElement.classList.add('show');
+        }
+
+        function toggleSavedStories() {
+            const list = document.getElementById('saved-stories-list');
+            list.style.display = list.style.display === 'none' ? 'block' : 'none';
+        }
+
+        function resetForNewStory() {
+            goBack(); // Reset the interface
+            document.getElementById('new-story-button').style.display = 'none'; // Hide the "Generate Another Story" button
+        }
+
+        function goBack() {
+            document.querySelector('.animal-button-container').style.display = 'flex';
+            document.getElementById('mood-buttons').style.display = 'none';
+            document.getElementById('action-buttons').style.display = 'none';
+            document.getElementById('generating-message').style.display = 'none';
+            document.getElementById('story-output').classList.remove('show');
+            document.getElementById('story-output').textContent = '';
+            document.getElementById('error-message').textContent = ''; // Clear error message
+            selectedAnimal = '';
+            selectedMood = '';
+        }
+
+        function signIn() {
+            alert("Sign In functionality is a placeholder!");
+        }
+    </script>
+</body>
+</html>
